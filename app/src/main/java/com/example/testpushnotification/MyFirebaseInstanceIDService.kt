@@ -22,7 +22,7 @@ class MyFirebaseInstanceIDService : FirebaseMessagingService() {
         }
 
     }
-    fun generateNotification(title: String, message: String) {
+    private fun generateNotification(title: String, message: String) {
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
@@ -45,7 +45,7 @@ class MyFirebaseInstanceIDService : FirebaseMessagingService() {
         }
         notificationManager.notify(0,builder.build())
     }
-    fun getRemoteView(title: String,message: String) : RemoteViews{
+    private fun getRemoteView(title: String, message: String) : RemoteViews{
         val remoteViews = RemoteViews("com.example.testpushnotification",R.layout.notification)
         remoteViews.setTextViewText(R.id.title,title)
         remoteViews.setTextViewText(R.id.message,message)
