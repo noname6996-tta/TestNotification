@@ -3,54 +3,69 @@ package com.example.testpushnotification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.widget.RemoteViews
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
-const val channelId = "notification_channel"
-const val channelName = "com.example.testpushnotification"
+class MyFirebaseMessagingService : FirebaseMessagingService() {
 
-class MyFirebaseInstanceIDService : FirebaseMessagingService() {
-
-    override fun onMessageReceived(message: RemoteMessage) {
-        if (message.notification != null){
-            generateNotification(message.notification!!.title!!,message.notification!!.body!!)
+    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        // Handle FCM messages here
+        remoteMessage.notification?.let {
+            showNotification(it.title, it.body, remoteMessage.data)
         }
-
     }
-    private fun generateNotification(title: String, message: String) {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_MUTABLE
-        )
-
-        var builder: NotificationCompat.Builder = NotificationCompat.Builder(
-            applicationContext,
-            channelId
-        ).setSmallIcon(R.drawable.ic_apple).setAutoCancel(true)
-            .setVibrate(longArrayOf(1000, 1000, 1000, 1000)).setContentIntent(pendingIntent)
-        builder = builder.setContent(getRemoteView(title,message))
-
+    private fun showNotification(title: String?, message: String?, data: Map<String, String>) {
+        val channelId = "default_channel_id"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            val notificationChannel = NotificationChannel(channelId, channelName,NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(notificationChannel)
-        }
-        notificationManager.notify(0,builder.build())
-    }
-    private fun getRemoteView(title: String, message: String) : RemoteViews{
-        val remoteViews = RemoteViews("com.example.testpushnotification",R.layout.notification)
-        remoteViews.setTextViewText(R.id.title,title)
-        remoteViews.setTextViewText(R.id.message,message)
-        remoteViews.setImageViewResource(R.id.app_logo,R.drawable.ic_apple)
 
-        return remoteViews
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Default Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("title", title)
+            putExtra("message", message)
+            // Thêm dữ liệu từ thông báo nếu cần thiết
+            for ((key, value) in data) {
+                putExtra(key, value)
+            }
+        }
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
+
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        notificationManager.notify(0, notificationBuilder.build())
+    }
+
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        Log.d(TAG, "Refreshed token: $token")
+
+        // If you want to send messages to this application instance or
+        // manage this apps subscriptions on the server side, send the
+        // FCM registration token to your app server.
+        sendRegistrationToServer(token)
+    }
+
+    private fun sendRegistrationToServer(token: String?) {
+        Log.d(TAG, "sendRegistrationTokenToServer($token)")
     }
 }
