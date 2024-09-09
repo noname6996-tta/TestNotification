@@ -46,6 +46,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 "Default Channel",
                 NotificationManager.IMPORTANCE_DEFAULT
             )
+            //
+            channel.setShowBadge(true)
+            
             notificationManager.createNotificationChannel(channel)
         }
 
